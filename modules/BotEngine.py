@@ -1,40 +1,19 @@
 import re
 
-class Reader:
-    '''
-    This class crawls a list of subreddits,
-    finds the top n text posts and returns
-    a list of objects that contain post data.
-
-    reddit_instance -> a praw.Reddit object with valid login information
-    subreddit      -> a string - a valid subreddit
-    '''
-    
-    def __init__(self, reddit_instance, subreddit):
-        self.reddit_instance = reddit_instance
-        self.subreddit       = subreddit
-    
-    def get_top_posts(self, n):
-        post_list = []
-        for post in self.reddit_instance.subreddit(self.subreddit).top():
-            if post.is_self:
-                post_list.append({'title': post.title,
-                                  'text' : post.selftext})
-                if len(post_list) == n:
-                    return post_list 
-        return post_list
-
-
-class PostTransformer:
+class BotEngine:
     '''
     This class removes the vowels from the post title and text.
     
     posts -> a list of dictionaries - {'title': str, 'text': str}
     '''
-    def __init__(self, posts):
+    def __init__(self, reddit_instance, posts):
+        self.reddit_instance = reddit_instance
         self.posts = posts
 
     def remove_vowels(self):
+        '''
+        Removes vowels from all posts' title and selftext
+        '''
         # compile 1 or more of the vowels ignoring the case
         vowels  = re.compile('[aeiou]', re.I)
         clean_posts = []
@@ -42,36 +21,34 @@ class PostTransformer:
             title = re.sub(vowels, '', post['title'])
             text  = re.sub(vowels, '', post['text'])
             clean_posts.append({'title': ' '.join(title.split()),
-                                'text' : ' '.join(text.split())
+                                'text' : ' '.join(text.split()),
+                                'id'   : post['id']
                                 })
         return clean_posts
 
-class Poster:
-    '''
-    So that I don't have to search the documentation again:
-    submit(title, selftext=None, url=None, flair_id=None, flair_text=None, resubmit=True, send_replies=True, nsfw=False, spoiler=False, collection_id=None)
-Add a submission to the subreddit.
+    def create_posts(self, subreddit):
+        '''
+        Creates a post on the subreddit specified.
+        
+        subreddit -> a Subreddit object
+        '''
+        posts = self.remove_vowels()
+        for post in posts:
+            subreddit.submit(title=post['title'],
+                             selftext=post['text'])
+            self.add_comment(subreddit, post['id'])
 
-Parameters:	
-title – The title of the submission.
-selftext – The markdown formatted content for a text submission. Use an empty string, '', to make a title-only submission.
-url – The URL for a link submission.
-collection_id – The UUID of a Collection to add the newly-submitted post to.
-flair_id – The flair template to select (default: None).
-flair_text – If the template’s flair_text_editable value is True, this value will set a custom text (default: None).
-resubmit – When False, an error will occur if the URL has already been submitted (default: True).
-send_replies – When True, messages will be sent to the submission author when comments are made to the submission (default: True).
-nsfw – Whether or not the submission should be marked NSFW (default: False).
-spoiler – Whether or not the submission should be marked as a spoiler (default: False).
-Returns:	
-A Submission object for the newly created submission.
+    def add_comment(self, sub, submission_id):
+        '''
+        Adds a comment to the subreddit where the post was read from
 
-Either selftext or url can be provided, but not both.
+        submission_id -> str - used to create a Submission object
+        '''
 
-For example to submit a URL to /r/reddit_api_test do:
+        submission = self.reddit_instance.submission(id=submission_id)
+        text = '''This post was featured in /r/fckvwls.   
+We removed the unnecessary vowels because to be honest they're disgusting.   
+   
+^(See my source code at https://github.com/analphagamma/NoVowelsBot)'''
 
-title = 'PRAW documentation'
-url = 'https://praw.readthedocs.io'
-reddit.subreddit('reddit_api_test').submit(title, url=url)
-'''
-    pass
+        submission.reply(text)
