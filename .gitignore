@@ -1,0 +1,10 @@
+bin/
+.git
+include
+lib
+lib64
+pip-selfcheck.json
+__pycache__/
+pyvenv.cfg
+*.json
+
