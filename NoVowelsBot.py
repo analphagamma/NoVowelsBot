@@ -1,16 +1,10 @@
 import praw
+import re
 import json
 from datetime import datetime, timedelta
+from time import sleep
 import sys
 from pprint import pprint
-
-from modules.BotEngine import BotEngine
-
-# constants
-SUBREDDITS = ['all']
-SCORE_THRESHOLD = 1000
-YDAY = (datetime.today() - timedelta(days=1)).timestamp() # yesterday 00:00 in UNIX timestamp
-NO_OF_POSTS = 5
 
 # getting login information
 class NoVowelsBot():
@@ -18,7 +12,7 @@ class NoVowelsBot():
     def __init__(self, login_info):
         self.login_info = login_info
 
-    def login_details(self):
+    def get_login_details(self):
         '''
         Return the login info as a dictionary.
         It contains the following keys:
@@ -55,14 +49,15 @@ class NoVowelsBot():
         return login
     
     def init_bot(self):
-        login = self.login_details()
+        login = self.get_login_details()
         # initialize Reddit object
         return praw.Reddit(client_id     = login.get('client_id'),
                            client_secret = login.get('client_secret'),
                            user_agent    = login.get('user_agent'),
-                           user_name     = login.get('username'),
+                           username     = login.get('username'),
                            password      = login.get('password')
                            )
+
 
 class LoginFileNotFound(Exception):
     '''
@@ -84,38 +79,88 @@ class IncompleteLoginDetailsError(Exception):
     '''
     pass
 
+def remove_vowels(post):
+    '''
+    Removes vowels from a post's title and selftext
+    '''
+    # compile 1 or more of the vowels ignoring the case
+    vowels  = re.compile('[aeiou]', re.I)
+    title = re.sub(vowels, '', post['title'])
+    text  = re.sub(vowels, '', post['text'])
+    return {'title': ' '.join(title.split()),
+            'text' : ' '.join(text.split()),
+            'id'   : post['id']}
+
+def get_posts(sub, score, since_day, no_posts):
+    # collect todays top posts
+    posts_collected = 0
+    posts = []
+    for submission in sub.top(time_filter='day'):
+        if submission.score >= score and \
+        submission.created_utc > since_day and \
+        submission.is_self:
+            posts.append({'title': submission.title,
+                        'text' : submission.selftext,
+                        'id'  : submission.id})
+            posts_collected += 1
+            if posts_collected > no_posts:
+                break
+    # if no new top posts - quit
+    if posts == []:
+        return None
+    else:
+        return posts
+
+def create_posts(reddit, posts, sub='fckvwls'):
+    '''
+    Creates a post on the subreddit specified.
+    
+    posts   -> list of dicts - a list of posts with keys 'title', 'text', 'id'
+    sub     -> str - a subreddit name. defaults to 'fckvlws'. only change it for tests
+    '''
+
+    def add_comment(submission_id):
+        '''
+        Adds a comment to the subreddit where the post was read from
+
+        submission_id -> str - used to create a Submission object
+        '''
+
+        submission = reddit.submission(id=submission_id)
+        text = '''This post was featured in /r/fckvwls.   
+    We removed the unnecessary 👎 vowels 🤮 because to be honest they're disgusting.💩   
+    ---   
+    *(See my source code [here](https://github.com/analphagamma/NoVowelsBot))*'''
+
+        submission.reply(text)
+
+    target_sub = reddit.subreddit(sub)
+    for post in posts:
+        clean_post = remove_vowels(post)
+        target_sub.submit(title    = clean_post['title'],
+                          selftext = clean_post['text'])
+        add_comment(post['id'])
+        # to avoid "you're doing that too much."
+        sleep(600)
+
 if __name__ == '__main__':
+    # constants
+    SUBREDDITS = ['all']
+    SCORE_THRESHOLD = 5000
+    DAYS = 1
+    SINCE = (datetime.today() - timedelta(days=DAYS)).timestamp() # yesterday 00:00 in UNIX timestamp
+    NO_OF_POSTS = 5
+
     # initialize bot
     nvbot = NoVowelsBot('credentials.json')
     # get reddit instance
     reddit = nvbot.init_bot()
     # define which subreddit(s) we're looking at
     subreddits = reddit.subreddit('+'.join(SUBREDDITS))
-
-    # main loop for bot
-    # collect todays top posts
-    no_posts = 0
-    posts = []
-    for submission in subreddits.top(time_filter='day'):
-        if submission.score >= SCORE_THRESHOLD and \
-           submission.created_utc > YDAY and \
-           submission.is_self:
-            posts.append({'title': submission.title,
-                          'text' : submission.selftext,
-                          'id'  : submission.id})
-            no_posts += 1
-            if no_posts > NO_OF_POSTS:
-                break
-    
-    # if no new top posts - quit
-    if posts == []:
+    posts = get_posts(subreddits, SCORE_THRESHOLD, SINCE, NO_OF_POSTS)
+    # exit if no posts meet the requirements
+    if not posts:
         sys.exit(0)
-
-    # "clean" posts
-    engine = BotEngine(reddit, posts)
-
-    clean_posts = engine.remove_vowels()
-    pprint(clean_posts)
-    # post on /r/fckvwls
-    fckvwls = reddit.subreddit('fckvwls')
-    engine.create_posts(fckvwls)
+    clean_posts = list(map(remove_vowels, posts))
+    # post on /r/fckvwls    
+    create_posts(reddit, clean_posts)
