@@ -2,15 +2,9 @@ import praw
 import re
 import json
 from datetime import datetime, timedelta
+from time import sleep
 import sys
 from pprint import pprint
-
-# constants
-SUBREDDITS = ['all']
-SCORE_THRESHOLD = 1000
-DAYS = 1
-SINCE = (datetime.today() - timedelta(days=DAYS)).timestamp() # yesterday 00:00 in UNIX timestamp
-NO_OF_POSTS = 5
 
 # getting login information
 class NoVowelsBot():
@@ -60,7 +54,7 @@ class NoVowelsBot():
         return praw.Reddit(client_id     = login.get('client_id'),
                            client_secret = login.get('client_secret'),
                            user_agent    = login.get('user_agent'),
-                           user_name     = login.get('username'),
+                           username     = login.get('username'),
                            password      = login.get('password')
                            )
 
@@ -91,7 +85,6 @@ def remove_vowels(post):
     '''
     # compile 1 or more of the vowels ignoring the case
     vowels  = re.compile('[aeiou]', re.I)
-
     title = re.sub(vowels, '', post['title'])
     text  = re.sub(vowels, '', post['text'])
     return {'title': ' '.join(title.split()),
@@ -118,14 +111,15 @@ def get_posts(sub, score, since_day, no_posts):
     else:
         return posts
 
-def create_posts(reddit, posts):
+def create_posts(reddit, posts, sub='fckvwls'):
     '''
     Creates a post on the subreddit specified.
     
-    subreddit -> a Subreddit object
+    posts   -> list of dicts - a list of posts with keys 'title', 'text', 'id'
+    sub     -> str - a subreddit name. defaults to 'fckvlws'. only change it for tests
     '''
 
-    def add_comment(sub, submission_id):
+    def add_comment(submission_id):
         '''
         Adds a comment to the subreddit where the post was read from
 
@@ -134,19 +128,29 @@ def create_posts(reddit, posts):
 
         submission = reddit.submission(id=submission_id)
         text = '''This post was featured in /r/fckvwls.   
-    We removed the unnecessary vowels because to be honest they're disgusting.   
-
-    ^(See my source code at https://github.com/analphagamma/NoVowelsBot)'''
+    We removed the unnecessary 👎 vowels 🤮 because to be honest they're disgusting.💩   
+    ---   
+    *(See my source code [here](https://github.com/analphagamma/NoVowelsBot))*'''
 
         submission.reply(text)
 
-    fckvwls = reddit.subreddit('fckvwls')
+    target_sub = reddit.subreddit(sub)
     for post in posts:
-        fckvwls.submit(title=post['title'],
-                        selftext=post['text'])
-        add_comment(fckvwls, post['id'])
+        clean_post = remove_vowels(post)
+        target_sub.submit(title    = clean_post['title'],
+                          selftext = clean_post['text'])
+        add_comment(post['id'])
+        # to avoid "you're doing that too much."
+        sleep(600)
 
 if __name__ == '__main__':
+    # constants
+    SUBREDDITS = ['all']
+    SCORE_THRESHOLD = 5000
+    DAYS = 1
+    SINCE = (datetime.today() - timedelta(days=DAYS)).timestamp() # yesterday 00:00 in UNIX timestamp
+    NO_OF_POSTS = 5
+
     # initialize bot
     nvbot = NoVowelsBot('credentials.json')
     # get reddit instance
@@ -157,9 +161,6 @@ if __name__ == '__main__':
     # exit if no posts meet the requirements
     if not posts:
         sys.exit(0)
-
     clean_posts = list(map(remove_vowels, posts))
-    pprint(clean_posts)
-    # post on /r/fckvwls
-    
+    # post on /r/fckvwls    
     create_posts(reddit, clean_posts)
