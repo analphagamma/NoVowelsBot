@@ -1,1 +1,1 @@
-worker: NoVowelsBot.py
+bot: python NoVowelsBot.py
