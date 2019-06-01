@@ -9,4 +9,5 @@ pyvenv.cfg
 *.json
 *.ipynb
 *.ipynb_checkpoints
+praw.ini
 

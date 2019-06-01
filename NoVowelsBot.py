@@ -3,7 +3,7 @@ import re
 import json
 from datetime import datetime, timedelta
 from time import sleep
-import sys
+import sys, os.path
 from pprint import pprint
 
 # getting login information
@@ -24,29 +24,46 @@ class NoVowelsBot():
         '''
 
         # test if file is present
-        try:
+        if os.path.isfile('./resources/'+self.login_info):
+            # if the bot is run locally we get the login details from the JSON file
             f = open('./resources/'+self.login_info, 'r')
-        except FileNotFoundError:
-            raise LoginFileNotFound
-        
-        # test if JSON file is valid
-        try:
-            login = json.load(f)
-        except json.decoder.JSONDecodeError:
-            f.close() # close the file before panicking
-            raise NotJSONFileError
-        f.close() # we don't need the file open anymore
+            # test if JSON file is valid
+            try:
+                login = json.load(f)
+            except json.decoder.JSONDecodeError:
+                f.close() # close the file before panicking
+                raise NotJSONFileError
+            f.close() # we don't need the file open anymore
 
-        # test for empty values or missing keys
-        if '' in login.values() or \
-            None in [login.get('client_id'),
-                     login.get('client_secret'),
-                     login.get('user_agent'),
-                     login.get('username'),
-                     login.get('password')]:
-            raise IncompleteLoginDetailsError
+            # test for empty values or missing keys
+            if '' in login.values() or \
+                None in [login.get('client_id'),
+                        login.get('client_secret'),
+                        login.get('user_agent'),
+                        login.get('username'),
+                        login.get('password')]:
+                raise IncompleteLoginDetailsError
 
-        return login
+            return login
+        else:
+            # if run on Heroku we need to use the config vars
+            login = {
+                'username'      : os.environ('username'),
+                'password'      : os.environ('password'),
+                'client_id'     : os.environ('client_id'),
+                'client_secret' : os.environ('client_secret'),
+                'user_agent'    : os.environ('user_agent')
+            }
+            # test for empty values or missing keys
+            if '' in login.values() or \
+                None in [login.get('client_id'),
+                        login.get('client_secret'),
+                        login.get('user_agent'),
+                        login.get('username'),
+                        login.get('password')]:
+                raise IncompleteLoginDetailsError
+            else:
+                return login
     
     def init_bot(self):
         login = self.get_login_details()
