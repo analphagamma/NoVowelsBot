@@ -128,7 +128,7 @@ def get_posts(sub, score, since_day, no_posts):
     else:
         return posts
 
-def create_posts(reddit, posts, sub='fckvwls'):
+def create_posts(reddit, posts, sub='fckvwls', sleep_time=600):
     '''
     Creates a post on the subreddit specified.
     
@@ -145,7 +145,7 @@ def create_posts(reddit, posts, sub='fckvwls'):
 
         submission = reddit.submission(id=submission_id)
         text = '''This post was featured in /r/fckvwls.   
-    We removed the unnecessary 👎 vowels 🤮 because to be honest they're disgusting.💩   
+    We removed the unnecessary 👎 vowels because to be honest they're disgusting.💩   
     ---   
     *(See my source code [here](https://github.com/analphagamma/NoVowelsBot))*'''
 
@@ -161,7 +161,7 @@ def create_posts(reddit, posts, sub='fckvwls'):
         except praw.exception.APIException:
             print('We\'re still doing it too much... :(')
         # to avoid "you're doing that too much."
-        sleep(600)
+        sleep(sleep_time)
 
 if __name__ == '__main__':
     # constants
