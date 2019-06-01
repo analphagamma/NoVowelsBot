@@ -154,9 +154,12 @@ def create_posts(reddit, posts, sub='fckvwls'):
     target_sub = reddit.subreddit(sub)
     for post in posts:
         clean_post = remove_vowels(post)
-        target_sub.submit(title    = clean_post['title'],
-                          selftext = clean_post['text'])
-        add_comment(post['id'])
+        try:
+            target_sub.submit(title    = clean_post['title'],
+                              selftext = clean_post['text'])
+            add_comment(post['id'])
+        except praw.exception.APIException:
+            print('We\'re still doing it too much... :(')
         # to avoid "you're doing that too much."
         sleep(600)
 
