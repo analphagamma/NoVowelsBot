@@ -48,11 +48,11 @@ class NoVowelsBot():
         else:
             # if run on Heroku we need to use the config vars
             login = {
-                'username'      : os.environ('username'),
-                'password'      : os.environ('password'),
-                'client_id'     : os.environ('client_id'),
-                'client_secret' : os.environ('client_secret'),
-                'user_agent'    : os.environ('user_agent')
+                'username'      : os.environ.get('username'),
+                'password'      : os.environ.get('password'),
+                'client_id'     : os.environ.get('client_id'),
+                'client_secret' : os.environ.get('client_secret'),
+                'user_agent'    : os.environ.get('user_agent')
             }
             # test for empty values or missing keys
             if '' in login.values() or \
