@@ -4,13 +4,13 @@ from NoVowelsBot import *
 
 class BotTest(unittest.TestCase):
 
+    @unittest.skip
     def test1_get_posts_from_test_subreddit(self):
         SCORE_THRESHOLD = 1
         DAYS = 14
         SINCE = (datetime.today() - timedelta(days=DAYS)).timestamp()
         NO_OF_POSTS = 2
 
-        #reddit = praw.Reddit('NoVowelsBot', user_agent='NoVowelBot - Finds top self posts, removes the vowels from the text and reposts them in /r/fckvwls')
         # initialize bot
         nvbot = NoVowelsBot('credentials.json')
         # get reddit instance
@@ -30,9 +30,8 @@ class BotTest(unittest.TestCase):
                         {'title': 'Ttl wth vwl fr y',
                          'text': 'Ds t hv ll th vwls? nly y knw.',
                          'id': 0})
-    
+    @unittest.skip
     def test3_create_post_add_comment(self):
-        #reddit = praw.Reddit('NoVowelsBot', user_agent='NoVowelBot - Finds top self posts, removes the vowels from the text and reposts them in /r/fckvwls')
         # initialize bot
         nvbot = NoVowelsBot('credentials.json')
         # get reddit instance
@@ -44,6 +43,26 @@ class BotTest(unittest.TestCase):
              ]
         create_posts(reddit, posts, 'NoVowelBotTest')
     
+    def test4_simulate_ordinary_work(self):
+        # initialize bot
+        SUBREDDITS = ['all']
+        SCORE_THRESHOLD = 5000
+        DAYS = 1
+        SINCE = (datetime.today() - timedelta(days=DAYS)).timestamp()
+        NO_OF_POSTS = 5
+
+        nvbot = NoVowelsBot('credentials.json')
+        # get reddit instance
+        reddit = nvbot.init_bot()
+        # define which subreddit(s) we're looking at
+        subreddits = reddit.subreddit('+'.join(SUBREDDITS))
+        posts = get_posts(subreddits, SCORE_THRESHOLD, SINCE, NO_OF_POSTS)
+        # exit if no posts meet the requirements
+        if not posts:
+            sys.exit(0)
+        clean_posts = list(map(remove_vowels, posts))
+        # post   
+        create_posts(reddit, clean_posts, 'NoVowelBotTest', 1)
 
 if __name__ == '__main__':
     unittest.main()
