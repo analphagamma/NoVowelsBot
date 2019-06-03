@@ -158,7 +158,7 @@ def create_posts(reddit, posts, sub='fckvwls', sleep_time=600):
         try:
             target_sub.submit(title    = clean_post['title'],
                               selftext = clean_post['text'])
-            add_comment(post['id'])
+            #add_comment(post['id'])
         except praw.exceptions.APIException:
             print('We\'re still doing it too much... :(')
         # to avoid "you're doing that too much."
@@ -184,4 +184,4 @@ if __name__ == '__main__':
         sys.exit(0)
     clean_posts = list(map(remove_vowels, posts))
     # post on /r/fckvwls    
-    create_posts(reddit, clean_posts)
+    create_posts(reddit, clean_posts, sub='NoVowelBotTest')
