@@ -147,7 +147,6 @@ def create_posts(reddit, posts, sub='fckvwls', sleep_time=600):
         text = '''This post was featured in /r/fckvwls.   
     We removed the unnecessary 👎 vowels because to be honest they're disgusting.💩   
        
-    ---   
     *(See my source code [here](https://github.com/analphagamma/NoVowelsBot))*'''
 
         submission.reply(text)
@@ -158,7 +157,7 @@ def create_posts(reddit, posts, sub='fckvwls', sleep_time=600):
         try:
             target_sub.submit(title    = clean_post['title'],
                               selftext = clean_post['text'])
-            #add_comment(post['id'])
+            add_comment(post['id'])
         except praw.exceptions.APIException:
             print('We\'re still doing it too much... :(')
         # to avoid "you're doing that too much."
@@ -167,10 +166,10 @@ def create_posts(reddit, posts, sub='fckvwls', sleep_time=600):
 if __name__ == '__main__':
     # constants
     SUBREDDITS = ['all']
-    SCORE_THRESHOLD = 5000
+    SCORE_THRESHOLD = 10000
     DAYS = 1
     SINCE = (datetime.today() - timedelta(days=DAYS)).timestamp() # yesterday 00:00 in UNIX timestamp
-    NO_OF_POSTS = 5
+    NO_OF_POSTS = 3
 
     # initialize bot
     nvbot = NoVowelsBot('credentials.json')
@@ -184,4 +183,4 @@ if __name__ == '__main__':
         sys.exit(0)
     clean_posts = list(map(remove_vowels, posts))
     # post on /r/fckvwls    
-    create_posts(reddit, clean_posts, sub='NoVowelBotTest')
+    create_posts(reddit, clean_posts)
