@@ -144,10 +144,11 @@ def create_posts(reddit, posts, sub='fckvwls', sleep_time=600):
         '''
 
         submission = reddit.submission(id=submission_id)
-        text = '''This post was featured in /r/fckvwls.   
-    We removed the unnecessary 👎 vowels because to be honest they're disgusting.💩   
-       
-    *(See my source code [here](https://github.com/analphagamma/NoVowelsBot))*'''
+        text = '''
+This post was featured in /r/fckvwls.   
+We removed the unnecessary 👎 vowels because to be honest they're disgusting.💩   
+   
+See my source code [here](https://github.com/analphagamma/NoVowelsBot)'''
 
         submission.reply(text)
 
